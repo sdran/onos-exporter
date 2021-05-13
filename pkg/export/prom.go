@@ -13,10 +13,18 @@ import (
 
 var log = logging.GetLogger("export", "prom")
 
+// onose2tCollectorPrometheus defines a prometheus collector
+// for the Onose2tCollector. Only the E2tEndpoint service address
+// field is required by Onose2tCollector, other fields
+// might be added as needed by it.
 type onose2tCollectorPrometheus struct {
 	E2tEndpoint string
 }
 
+// Retrieve implements the method needed for a Collector interface
+// in a prometheus exporter. It retrieves all the kpis from
+// Onose2tCollector and pass them to the ch channel using the
+// prometheus.Metric format.
 func (c *onose2tCollectorPrometheus) Retrieve(ch chan<- prometheus.Metric) error {
 	onose2tKPIs, err := collect.Onose2tCollector(c.E2tEndpoint)
 	if err != nil {
@@ -38,7 +46,10 @@ func (c *onose2tCollectorPrometheus) Retrieve(ch chan<- prometheus.Metric) error
 	return nil
 }
 
-func NewPrometheusExporter(config Config) prom.Exporter {
+// PrometheusExporter uses Config to create an instance of a
+// Prometheus exporter, registering all its collectors, which must
+// implement the interface method Retrieve.
+func PrometheusExporter(config Config) prom.Exporter {
 	exporter := prom.NewExporter(config.Path, config.Address)
 
 	err := exporter.RegisterCollector("onos-e2t", &onose2tCollectorPrometheus{E2tEndpoint: config.E2tEndpoint})
