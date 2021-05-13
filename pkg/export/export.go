@@ -4,6 +4,16 @@
 
 package export
 
+// Config establishes the fields needed for the instantiation of
+// an exporter.
+// Address and Path define the exporter endpoint from where KPIs can
+// be pulled or pushed.
+// Mode defines the exporter mode, i.e., the exporter implementation mode,
+// for instance, prometheus.
+// CAPath, KeyPath and CertPath are defined by the utilization of
+// a northbound implementation of needed certificates for an exporter.
+// The remaining fields define the needed data needed for the exporters,
+// those fields can be defined in their own structs if needed.
 type Config struct {
 	Address     string
 	Path        string
@@ -14,16 +24,22 @@ type Config struct {
 	E2tEndpoint string
 }
 
+// exporter defines the behavior expected from an exporter.
 type exporter interface {
 	Run() error
 }
 
+// NewExporter defines a factory for an exporter interface.
+// PrometheusExporter realizes that interface behavior.
+// Other exporters can be added similarly. Turning the implementation
+// of onos-exporter independent from a single exporter.
 func NewExporter(cfg Config) exporter {
 	switch cfg.Mode {
 	case "prometheus":
 		log.Info("Creating prometheus exporter")
-		return NewPrometheusExporter(cfg)
+		return PrometheusExporter(cfg)
 	default:
-		return NewPrometheusExporter(cfg)
+		log.Info("Creating default exporter (prometheus)")
+		return PrometheusExporter(cfg)
 	}
 }

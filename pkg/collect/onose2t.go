@@ -13,15 +13,20 @@ import (
 	"google.golang.org/grpc"
 )
 
-func onose2tListConnections(conn *grpc.ClientConn) (*kpis.OnosE2tConnections, error) {
-	e2tconnections := kpis.NewOnosE2tConnections()
+// onose2tListConnections implements the extraction of the kpi OnosE2tConnections
+// from the component onose2t. It connects to onos e2t service list the e2NodeConnections
+// and fill the proper fields of the OnosE2tConnectionsKPI.
+// Other functions must be implemented similar to this one in order to extract other
+// kpis from onos e2t service.
+func onose2tListConnections(conn *grpc.ClientConn) (kpis.KPI, error) {
+	OnosE2tConnectionsKPI := kpis.OnosE2tConnections()
 
 	request := adminapi.ListE2NodeConnectionsRequest{}
 	client := adminapi.NewE2TAdminServiceClient(conn)
 	stream, err := client.ListE2NodeConnections(context.Background(), &request)
 
 	if err != nil {
-		return e2tconnections, err
+		return OnosE2tConnectionsKPI, err
 	}
 
 	for {
@@ -29,11 +34,11 @@ func onose2tListConnections(conn *grpc.ClientConn) (*kpis.OnosE2tConnections, er
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return e2tconnections, err
+			return OnosE2tConnectionsKPI, err
 		}
 
-		e2tconnections.NumberConnections += 1
+		OnosE2tConnectionsKPI.NumberConnections += 1
 	}
 
-	return e2tconnections, nil
+	return OnosE2tConnectionsKPI, nil
 }

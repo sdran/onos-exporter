@@ -29,14 +29,11 @@ var configOptions = []string{
 	authHeaderKey,  // Auth header in the form 'Bearer <base64>'
 }
 
-type config struct {
-	subsystem string
-	options   map[string]string
-}
-
+// Configuration defines the methods expected to fulfill
+// the behavior of a config.
 type Configuration interface {
-	Init()
-	Set(map[string]string) error
+	init()
+	set(map[string]string) error
 	getAddress() string
 	getCertPath() string
 	getKeyPath() string
@@ -55,13 +52,20 @@ func NewConfig(subsystem string) Configuration {
 	}
 }
 
-func (c *config) Init() {
+// config implements the Configuration interface, using the
+// viper package to maintain the state of its data.
+type config struct {
+	subsystem string
+	options   map[string]string
+}
+
+func (c *config) init() {
 	for opt := range c.options {
 		c.options[opt] = viper.GetString(opt)
 	}
 }
 
-func (c *config) Set(options map[string]string) error {
+func (c *config) set(options map[string]string) error {
 	for opt, value := range options {
 		if _, ok := c.options[opt]; ok {
 			c.options[opt] = value
@@ -131,7 +135,8 @@ func runConfigInitCommand(configName string) error {
 	return nil
 }
 
-// InitConfig :
+// InitConfig defines the Configuration to be used for the
+// creation of a connection to a onos service.
 func InitConfig(configNameInit string) Configuration {
 	home, err := homedir.Dir()
 	if err != nil {
@@ -150,6 +155,6 @@ func InitConfig(configNameInit string) Configuration {
 	_ = viper.ReadInConfig()
 
 	config := NewConfig(configNameInit)
-	config.Init()
+	config.init()
 	return config
 }
