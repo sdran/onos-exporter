@@ -15,13 +15,16 @@ package export
 // The remaining fields define the needed data needed for the exporters,
 // those fields can be defined in their own structs if needed.
 type Config struct {
-	Address     string
-	Path        string
-	Mode        string
-	CAPath      string
-	KeyPath     string
-	CertPath    string
-	E2tEndpoint string
+	Address            string
+	Path               string
+	Mode               string
+	CAPath             string
+	KeyPath            string
+	CertPath           string
+	E2tEndpoint        string
+	E2subEndpoint      string
+	XappPciEndpoint    string
+	XappKpimonEndpoint string
 }
 
 // exporter defines the behavior expected from an exporter.

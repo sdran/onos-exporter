@@ -5,47 +5,39 @@
 package collect
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/onosproject/onos-exporter/pkg/kpis"
 )
 
-// Var defitions of Configuration needed for each collector.
-// Multiple collectors can be defined in this file, with their
-// respective configs specified here.
-var (
-	onose2tConfig = InitConfig("onos-e2t")
-)
+// Collector defines an interface for Collectors to retrieve
+// a list of kpis.KPI via the Collect method.
+type Collector interface {
+	Collect() ([]kpis.KPI, error)
+}
 
-// Onose2tCollector implements the collector of the onos e2t service kpis.
-// It uses the function(s) defined in onose2t.go to extract the kpis and return
-// a list of them.
-// This function can create go routines if needed in order to extract multiple
-// onos e2t kpis using the same connection and multiple calls to functions
-// defined in the file onose2t.go.
-func Onose2tCollector(e2tServiceAddress string) ([]kpis.KPI, error) {
+// KPIs retrieves the list of kpis.KPI from each Collector.
+func KPIs(collectors []Collector) ([]kpis.KPI, error) {
+	var errstrings []string
 	kpis := []kpis.KPI{}
 
-	err := onose2tConfig.set(map[string]string{addressKey: e2tServiceAddress})
-	if err != nil {
-		return kpis, err
+	for _, col := range collectors {
+		colKPIs, err := col.Collect()
+
+		if err != nil {
+			errstrings = append(errstrings, err.Error())
+
+		} else {
+			kpis = append(kpis, colKPIs...)
+		}
+
 	}
 
-	conn, err := GetConnection(
-		onose2tConfig.getAddress(),
-		onose2tConfig.getCertPath(),
-		onose2tConfig.getKeyPath(),
-		onose2tConfig.noTLS(),
-	)
-	if err != nil {
+	if len(errstrings) > 0 {
+		err := fmt.Errorf(strings.Join(errstrings, "\n"))
 		return kpis, err
 	}
-	defer conn.Close()
-
-	e2tconnectionsKPI, err := onose2tListConnections(conn)
-	if err != nil {
-		return kpis, err
-	}
-
-	kpis = append(kpis, e2tconnectionsKPI)
 
 	return kpis, nil
 }

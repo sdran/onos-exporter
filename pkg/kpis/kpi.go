@@ -11,5 +11,57 @@ import "github.com/prometheus/client_golang/prometheus"
 // in order to support its content to be exported to a particular
 // TSDB.
 type KPI interface {
-	PrometheusFormat() (prometheus.Metric, error)
+	PrometheusFormat() ([]prometheus.Metric, error)
+}
+
+// Const definitions of kpis name and description.
+// Name and description are used to define a particular KPI.
+const (
+	onosE2tConnectionsKPIName        = "connections"
+	onosE2tConnectionsKPIDescription = "The number of e2t connections"
+
+	xappPciNumConflictsKPIName     = "conflicts"
+	xappPciNumConflictsDescription = "The number of xapp pci conflicts per cell"
+
+	onosE2subsKPIName     = "subscriptions"
+	onosE2subsDescription = "The subscriptions of onos e2sub"
+
+	xappkpimonKPIName     = "kpm"
+	xappkpimonDescription = "The KPM related metrics"
+)
+
+// OnosE2tConnections defines the factory implementation of a kpi
+// onosE2tConnections having a well defined name and description.
+func OnosE2tConnections() *onosE2tConnections {
+	return &onosE2tConnections{
+		name:        onosE2tConnectionsKPIName,
+		description: onosE2tConnectionsKPIDescription,
+	}
+}
+
+// OnosE2subs defines the factory implementation of a kpi
+// onosE2subs having a well defined name and description.
+func OnosE2subs() *onosE2subs {
+	return &onosE2subs{
+		name:        onosE2subsKPIName,
+		description: onosE2subsDescription,
+	}
+}
+
+// XappKpiMon defines the factory implementation of a kpi
+// onosE2subs having a well defined name and description.
+func XappKpiMon() *xappkpimon {
+	return &xappkpimon{
+		name:        xappkpimonKPIName,
+		description: xappkpimonDescription,
+	}
+}
+
+// XappPciNumConflicts defines the factory implementation of a kpi
+// xappPciNumConflicts having a well defined name and description.
+func XappPciNumConflicts() *xappPciNumConflicts {
+	return &xappPciNumConflicts{
+		name:        xappPciNumConflictsKPIName,
+		description: xappPciNumConflictsDescription,
+	}
 }
