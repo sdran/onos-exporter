@@ -17,33 +17,56 @@ var log = logging.GetLogger("export", "prom")
 // for the Onose2tCollector. Only the E2tEndpoint service address
 // field is required by Onose2tCollector, other fields
 // might be added as needed by it.
-type onose2tCollectorPrometheus struct {
-	E2tEndpoint string
+type CollectorsPrometheus struct {
+	collectors []collect.Collector
 }
 
 // Retrieve implements the method needed for a Collector interface
 // in a prometheus exporter. It retrieves all the kpis from
-// Onose2tCollector and pass them to the ch channel using the
+// CollectorsPrometheus and pass them to the ch channel using the
 // prometheus.Metric format.
-func (c *onose2tCollectorPrometheus) Retrieve(ch chan<- prometheus.Metric) error {
-	onose2tKPIs, err := collect.Onose2tCollector(c.E2tEndpoint)
+// The function collect.KPIs performs the collection of each collector
+// list of KPIs, and aggregates them in onosKPIs var.
+func (c *CollectorsPrometheus) Retrieve(ch chan<- prometheus.Metric) error {
+	onosKPIs, err := collect.KPIs(c.collectors)
 	if err != nil {
-		log.Errorf("onos-e2t collector error %s", err)
+		log.Errorf("onos collector error %s", err)
 		return err
 	}
 
-	for _, e2tkpi := range onose2tKPIs {
-		kpi, err := e2tkpi.PrometheusFormat()
+	for _, kpi := range onosKPIs {
+		promMetrics, err := kpi.PrometheusFormat()
 
 		if err != nil {
-			log.Errorf("onos-e2t kpi prometheus format error %s", err)
+			log.Errorf("onos kpi prometheus format error %s", err)
 		} else {
-			ch <- kpi
+			for _, m := range promMetrics {
+				ch <- m
+			}
 		}
 
 	}
 
 	return nil
+}
+
+// Defines the set of collector used to extract KPIs for
+// the prometheus exporter. Each collector implements the
+// prom.Collector interface behavior via the method Collect.
+func initCollectorsPrometheus(config Config) prom.Collector {
+	e2tCollector := collect.Onose2tCollector{E2tServiceAddress: config.E2tEndpoint}
+	e2subCollector := collect.Onose2subCollector{E2subServiceAddress: config.E2subEndpoint}
+	xappPciCollector := collect.XappPciCollector{XappPciServiceAddress: config.XappPciEndpoint}
+	xappKpimonCollector := collect.XappKpimonCollector{XappKpimonServiceAddress: config.XappKpimonEndpoint}
+
+	return &CollectorsPrometheus{
+		collectors: []collect.Collector{
+			e2tCollector,
+			e2subCollector,
+			xappPciCollector,
+			xappKpimonCollector,
+		},
+	}
 }
 
 // PrometheusExporter uses Config to create an instance of a
@@ -52,9 +75,10 @@ func (c *onose2tCollectorPrometheus) Retrieve(ch chan<- prometheus.Metric) error
 func PrometheusExporter(config Config) prom.Exporter {
 	exporter := prom.NewExporter(config.Path, config.Address)
 
-	err := exporter.RegisterCollector("onos-e2t", &onose2tCollectorPrometheus{E2tEndpoint: config.E2tEndpoint})
+	log.Info("Registering collector sdran")
+	err := exporter.RegisterCollector("sdran", initCollectorsPrometheus(config))
 	if err != nil {
-		log.Errorf("error registering collector onos-e2t %s", err)
+		log.Errorf("error registering collector sdran %s", err)
 	}
 
 	return exporter
